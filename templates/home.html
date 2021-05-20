@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block links %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/posts_style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/home_page.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>Моя страница</h1>
+<div class="container">
+    <div class="row">
+
+        <div id="user-avatar-card" class="card col-1" style="width: 18rem; height: 30rem">
+            <br>
+            <img class="card-img-top" src="{{ url_for('static', filename='img/users_img/' + user.img + '.jpg') }}" alt="Ваша фотография">
+
+            <div class="card-body">
+                <h5 class="card-title">Моя фотография</h5>
+            </div>
+
+            {% if current_user == user %}
+                <div class="card-footer">
+                    <a class="card-link" href="{{ url_for('edit_user', user_id=user.id) }}">Редактировать</a>
+                    <a class="card-link" href="{{ url_for('delete_user_avatar', user_id=user.id) }}" style="color: red">Удалить</a>
+                </div>
+
+                <div class="card-body">
+                    <span style="font-size: 18px">Ваша почта:</span><br>
+                    <span style="color: blue">{{ user.email }}</span><br>
+                    <a class="card-link" href="{{ url_for('change_email', user_id=user.id) }}">Изменить</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <div id="user-info-card" class="card col-5 offset-md-2">
+            <div class="card-header">
+                <h3 class="card-title">{{ user.nickname }}</h3>
+                <span style="color: gray;">Последний раз онлайн - {{ moment(user.last_seen).fromNow() }}</span>
+                <h6 class="card-title">{{ user.status }}</h6>
+            </div>
+
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                    <h4>Образование</h4>
+                    {{ user.education }}
+                </li>
+                <li class="list-group-item">
+                    <h4>Пол</h4>
+                    {{ user.sex }}
+                </li>
+                <li class="list-group-item">
+                    <h4>Семейный статус</h4>
+                    {{ user.marital_status }}
+                </li>
+
+                <li class="list-group-item">
+                    <h4>Возраст</h4>
+                    {{ user.age() }}
+                </li>
+                <li class="list-group-item">
+                    <h4>День рождения</h4>
+                    {% if user.birthday.year != 1800 %}
+                    {{ user.birthday.strftime('%d %B') }}
+                    {% else %} Не указано {% endif %}
+                </li>
+
+                <li class="list-group-item">
+                    <h4>Обо мне</h4>
+                    {{ user.about_me }}
+                </li>
+            </ul>
+
+
+            {% if current_user == user %}
+                <div class="card-footer">
+                    <a class="card-link" href="{{ url_for('edit_user', user_id=user.id) }}">Редактировать</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="card col-3 offset-md-1">
+            <div class="card-header">
+                <h4>Друзья: {{ user.friends()|length }}</h4>
+            </div>
+
+            <div class="card-body">
+                {% for friend in user.friends() %}
+                {% if loop.index <= 5 %}
+                    <img class="friend-round-img" src="{{ url_for('static', filename='img/users_img/' + friend.img + '.jpg') }}" alt="Фотография друга">
+                    <a href="{{ url_for('home_page', user_id=friend.id) }}" style="font-size: 15px"><b>{{ friend.nickname }}</b></a>
+                    <br>
+                {% endif %}
+                {% endfor %}
+                <br>
+                <a class="btn btn-secondary" href="{{ url_for('friends', user_id=user.id) }}">Все друзья</a>
+            </div>
+
+
+            <div class="card-header">
+                <h4>Подписчики: {{ user.subscribers()|length }}</h4>
+            </div>
+            <div class="card-body">
+                {% for subscriber in user.subscribers() %}
+                {% if loop.index <= 5 %}
+                    <img class="friend-round-img" src="{{ url_for('static', filename='img/users_img/' + subscriber.img + '.jpg') }}" alt="Фотография подписчика">
+                    <a href="{{ url_for('home_page', user_id=subscriber.id) }}" style="font-size: 15px"><b>{{ subscriber.nickname }}</b></a>
+                    <br>
+                {% endif %}
+                {% endfor %}
+                <br>
+                <a class="btn btn-secondary" href="{{ url_for('subscribers', user_id=user.id) }}">Все подписчики</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<br><br><br><h1>Мои новости</h1>
+
+{% if user == current_user %}
+<a class="btn btn-primary add-post" href="{{ url_for('add_post') }}">Новый пост</a>
+{% endif %}
+
+{% if not posts %}
+    <div class="none">
+        {% if user == current_user %}
+        <h1>Вы не выложили ни одного поста :(</h1>
+        {% else %}
+        <h1>Этот пользователь не выложил ни одного поста :(</h1>
+        {% endif %}
+        <img src=".{{ url_for('static', filename='img/cat.png') }}" alt="Грустный котик"/>
+    </div>
+{% else %}
+    <div id="news">
+        {% include '_post_view_pagination.html' %}
+        {% for post in posts %}
+            {% include '_post_card.html' %}
+        {% endfor %}
+        {% include '_post_view_pagination.html' %}
+    </div>
+{% endif %}
+{% endblock %}

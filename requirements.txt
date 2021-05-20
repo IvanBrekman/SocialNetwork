@@ -1,0 +1,11 @@
+sqlalchemy~=1.4.5
+sqlalchemy-serializer
+flask-login
+requests
+flask~=1.1.2
+flask_wtf
+Werkzeug~=1.0.1
+alembic~=1.6.1
+WTForms~=2.3.3
+python-dotenv~=0.17.0
+PyJWT~=2.1.0

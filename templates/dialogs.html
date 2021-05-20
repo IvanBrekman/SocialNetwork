@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block links %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/posts_style.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/dialogs.css') }}">
+{% endblock %}
+
+{% block content %}
+<div id="dialogs" class="card post-card">
+    {% include '_dialogs_card.html' %}
+</div>
+{% endblock %}

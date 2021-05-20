@@ -1,0 +1,27 @@
+.post-card {
+    margin-left: 20%;
+    margin-bottom: 50px;
+    width: 60%;
+}
+
+h3.card-title {
+    text-align: center;
+}
+
+img.post-img {
+    max-width: 800px;
+    max-height: 600px;
+    display:block;
+    margin:auto;
+}
+
+.round {
+    border-radius: 50px;
+    border: 3px solid lightblue;
+    box-shadow: 0 0 7px #666;
+}
+
+img.author-img {
+    width: 100px;
+    height: 100px;
+}

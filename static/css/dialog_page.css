@@ -1,0 +1,33 @@
+.user-from-message {
+    width: 70%;
+    margin-left: 30%;
+    text-align: right;
+}
+
+.user-to-message {
+    width: 70%;
+}
+
+.fixed {
+    position: fixed;
+    margin-left: 10%;
+    width: 100px;
+    height: 60px;
+    padding-top: 0;
+}
+
+.rounded-fixed {
+    position: fixed;
+    margin-left: 10%;
+    margin-top: 30%;
+    width: 100px;
+    height: 100px;
+    padding-top: 20px;
+    border-radius: 50px;
+}
+
+#dialog-card {
+    width: 50%;
+    margin-left: 25%;
+    min-height: 80vh;
+}

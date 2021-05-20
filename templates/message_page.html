@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block navigation %}
+    {% if current_user.is_authenticated %}
+        {{ super() }}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<h1>{{ h1 }}</h1>
+<h3 style="text-align: center">{{ h3 }}</h3>
+{% endblock %}

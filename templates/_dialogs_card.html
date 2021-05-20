@@ -1,0 +1,50 @@
+<div class="card-header">
+    <h1>Диалоги</h1>
+</div>
+
+{% if data %}
+<ul class="list-group list-group-flush">
+    {% for dialog, last_message in data.items() %}
+        {% if dialog.messages %}
+            {% if dialog.user1 == sender %} {% set receiver = dialog.user2 %}
+            {% else %}                      {% set receiver = dialog.user1 %}
+            {% endif %}
+            <li class="list-group-item">
+                <img class="author-img round" src="{{ url_for('static', filename='img/users_img/' + receiver.img + '.jpg') }}" alt="Фотография собеседника">
+                <a href="{{ url_for('home_page', user_id=receiver.id) }}" style="font-size: 25px"><b>{{ receiver.nickname }}</b></a><br>
+                <table width="100%">
+                {% if last_message.user_from == sender %}
+                    <td>
+                        <a href="{{ url_for('users_dialog', id_from=sender.id, id_to=receiver.id) }}" class="btn btn-info">К диалогу</a>
+                        <span style="font-size: 25px; color: gray" class="offset-md-1"><b>Вы: </b></span>
+                        <span style="font-size: 25px">{{ last_message.get_abbreviated_message(30) }}</span>
+                        <span style="color: gray; text-align: right"> - {{ moment(last_message.send_date).calendar() }}</span>
+                        {% if not last_message.is_read %}
+                            <span style="color: orangered">Не прочитано</span>
+                        {% else %}
+                            <span style="color: deepskyblue">Прочитано</span>
+                        {% endif %}
+                    </td>
+                {% else %}
+                    <td>
+                        <a href="{{ url_for('users_dialog', id_from=sender.id, id_to=receiver.id) }}" class="btn btn-info">К диалогу</a>
+                        <span style="font-size: 25px" class="offset-md-1">{{ last_message.get_abbreviated_message(50) }}</span>
+                        {% set unw_mes = dialog.unread_messages_amount(sender.id) %}
+                        <span style="color: gray; text-align: right"> - {{ moment(last_message.send_date).calendar() }}</span>
+                    </td>
+                    {% if unw_mes != 0 %}
+                    <td style="text-align: right">
+                        <span class="badge rounded-pill bg-secondary" style="font-size: 25px">{{ unw_mes }}</span>
+                    </td> {% endif %}
+                {% endif %}
+                </table>
+            </li>
+        {% endif %}
+    {% endfor %}
+</ul>
+{% else %}
+    <div class="none">
+        <h1>Отсутствует информация по данной категории</h1>
+        <img src="{{ url_for('static', filename='img/cat.png') }}" alt="Грустный котик"/>
+    </div>
+{% endif %}

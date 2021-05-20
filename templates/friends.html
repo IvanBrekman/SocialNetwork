@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+    {% macro friend_card(user) %}
+        <div id="user_{{ user.id }}" class="card post-card">
+            <div class="card-header">
+                <img class="author-img round" src="{{ url_for('static', filename='img/users_img/' + user.img + '.jpg') }}" alt="Фотография друга">
+
+                <a href="{{ url_for('home_page', user_id=user.id) }}" style="font-size: 30px"><b>{{ user.nickname }}</b></a>
+                <span style="color: green; font-size: 20px"> - Друг</span><br>
+                <span style="font-size: 15px">Статус: {{ user.status }}</span>
+            </div>
+
+            <div class="card-footer">
+                <a id="user_{{ user.id }}_btn1" class="btn btn-primary" href="{{ url_for('users_dialog', id_from=current_user.id, id_to=user.id) }}">Написать</a>
+                {% if c_user == current_user %}<a id="user_{{ user.id }}_btn2" class="btn btn-danger" href="{{ url_for('friendship_requests', request_type='remove_friend', id_from=current_user.id, id_to=user.id) }}">Удалить из друзей</a>{% endif %}
+            </div>
+        </div>
+    {% endmacro %}
+
+    {% macro subscriber_card(user) %}
+        <div id="user_{{ user.id }}" class="card post-card">
+            <div class="card-header">
+                <img class="author-img round" src="{{ url_for('static', filename='img/users_img/' + user.img + '.jpg') }}" alt="Фотография подписчика">
+
+                <a href="{{ url_for('home_page', user_id=user.id) }}" style="font-size: 30px"><b>{{ user.nickname }}</b></a>
+                <span style="color: red; font-size: 20px;"> - Подписчик</span><br>
+                <span style="font-size: 15px">Статус: {{ user.status }}</span>
+            </div>
+
+            <div class="card-footer">
+                {% if c_user == current_user %}<a id="user_{{ user.id }}_btn1" class="btn btn-success" href="{{ url_for('friendship_requests', request_type='add_friend', id_from=current_user.id, id_to=user.id) }}">Принять заявку</a>{% endif %}
+                <a id="user_{{ user.id }}_btn2" class="btn btn-primary" href="{{ url_for('users_dialog', id_from=current_user.id, id_to=user.id) }}">Написать</a>
+            </div>
+        </div>
+    {% endmacro %}
+
+    {% macro offer_card(user) %}
+        <div id="user_{{ user.id }}" class="card post-card">
+            <div class="card-header">
+                <img class="author-img round" src="{{ url_for('static', filename='img/users_img/' + user.img + '.jpg') }}" alt="Фотография Пользователя">
+
+                <a href="{{ url_for('home_page', user_id=user.id) }}" style="font-size: 30px"><b>{{ user.nickname }}</b></a>
+                <span style="color: darkgray; font-size: 20px"> - Заявка в друзья</span><br>
+                <span style="font-size: 15px">Статус: {{ user.status }}</span>
+            </div>
+
+            <div class="card-footer">
+                <a id="user_{{ user.id }}_btn1" class="btn btn-primary" href="{{ url_for('users_dialog', id_from=current_user.id, id_to=user.id) }}">Написать</a>
+                {% if c_user == current_user %}<a id="user_{{ user.id }}_btn2" class="btn btn-danger" href="{{ url_for('friendship_requests', request_type='remove_req', id_from=current_user.id, id_to=user.id) }}">Отменить заявку</a>{% endif %}
+            </div>
+        </div>
+    {% endmacro %}
+
+    {% macro usual_user_card(user) %}
+        <div id="user_{{ user.id }}" class="card post-card">
+            <div class="card-header">
+                <img class="author-img round" src="{{ url_for('static', filename='img/users_img/' + user.img + '.jpg') }}" alt="Фотография Пользователя">
+
+                <a href="{{ url_for('home_page', user_id=user.id) }}" style="font-size: 30px"><b>{{ user.nickname }}</b></a><br>
+                <span style="font-size: 15px">Статус: {{ user.status }}</span>
+            </div>
+
+            <div class="card-footer">
+                <a id="user_{{ user.id }}_btn1" class="btn btn-primary" href="{{ url_for('users_dialog', id_from=current_user.id, id_to=user.id) }}">Написать</a>
+                {% if c_user == current_user %}<a id="user_{{ user.id }}_btn2" class="btn btn-success" href="{{ url_for('friendship_requests', request_type='add_req', id_from=current_user.id, id_to=user.id) }}">Добавить в друзья</a>{% endif %}
+            </div>
+        </div>
+    {% endmacro %}
+
+{% block links %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/posts_style.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+    {% include '_find_user_form.html' %}
+
+    {% block cards %}
+        {% if not users %}
+            <div class="none">
+                {% if method == "GET" %}
+                    <h1>Отсутствует информация по данной категории</h1>
+                {% else %}
+                    <h1>Друзей с таким никнеймом не найдено</h1>
+                {% endif %}
+                <img src="{{ url_for('static', filename='img/cat.png') }}" alt="Грустный котик"/>
+            </div>
+        {% endif %}
+        {% for user in users %}
+            {{ friend_card(user) }}
+        {% endfor %}
+    {% endblock %}
+{% endblock %}

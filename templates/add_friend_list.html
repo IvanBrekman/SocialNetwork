@@ -1,0 +1,21 @@
+{% extends 'friends.html' %}
+
+{% block cards %}
+    {% if not users %}
+    <div class="none">
+        <h1>Пользователей с таким никнеймом не найдено</h1>
+        <img src="{{ url_for('static', filename='img/cat.png') }}" alt="Грустный котик"/>
+    </div>
+    {% endif %}
+    {% for user in users %}
+        {% if user in c_user.friends() %}
+            {{ friend_card(user) }}
+        {% elif user in c_user.subscribers() %}
+            {{ subscriber_card(user) }}
+        {% elif user in c_user.offers() %}
+            {{ offer_card(user) }}
+        {% else %}
+            {{ usual_user_card(user) }}
+        {% endif %}
+    {% endfor %}
+{% endblock %}

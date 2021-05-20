@@ -1,0 +1,11 @@
+#switchTheme{
+    display: inline-block;
+    position: relative;
+}
+.none{
+    width: 60%;
+    margin-left: 20%;
+    color: white;
+    text-align: center;
+    font-size: 60px;
+}

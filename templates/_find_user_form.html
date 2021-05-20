@@ -1,0 +1,8 @@
+<form method="post">
+    {{ form.hidden_tag() }}
+    <div class="input-group mb-3">
+        <span class="input-group-text" id="basic-addon1">🔎</span>
+        {{ form.nickname(class="form-control", placeholder="Имя пользователя") }}
+    </div>
+    {{ form.submit(class="btn btn-primary") }}
+</form><br><br><br>

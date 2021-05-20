@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block links %}
+    <script src="{{ url_for('static', filename='js/open_images.js') }}"></script>
+    <style> #photo_img { height: 400px; } </style>
+{% endblock %}
+
+
+{% block content %}
+<form class="" method="post" enctype="multipart/form-data">
+    <h1>Изменение поста</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.title.label }}<br>
+            {{ form.title(class="form-control") }}<br>
+            {% for error in form.title.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.content.label }}<br>
+            {{ form.content(class="form-control") }}<br>
+            {% for error in form.content.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.tags.label }}<br>
+            {{ form.tags(class="form-control") }}<br>
+            {% for error in form.tags.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>
+            <h4>Фотография к посту</h4>
+            <p><img src="{{ url_for('static', filename='img/post_img/' + post.id|string + '_' + post.img + '.jpg') }}" alt="Выбранная картинка" id="photo_img" /></p>
+            {{ form.img.label }}<br>
+            {{ form.img(class="form-control", type="file", accept="image/*", onChange="showFile(event)") }}<br>
+
+            {% for error in form.img.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+
+        <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+        {% if message %} <div class="alert alert-danger">{{ message }}</div> {% endif %}
+    </form>
+</form>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block navigation %}{% endblock %}
+{% block links %}<style>body {text-align: center;}</style>{% endblock %}
+
+{% block content %}
+    {% block error_description %}{% endblock %}
+    <a href="{{ url_for('index') }}" class="btn btn-primary">На главную страницу</a>
+{% endblock %}

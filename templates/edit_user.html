@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block links %}
+    <script src="{{ url_for('static', filename='js/open_images.js') }}"></script>
+    <style> #photo_img { height: 400px; } </style>
+{% endblock %}
+
+
+{% block content %}
+<form class="" method="post" enctype="multipart/form-data">
+    <h1>Редактирование</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            <h4>Ваша фотография </h4>
+            <p><img src="{{ url_for('static', filename='img/users_img/' + current_user.img + '.jpg') }}" alt="Выбранная картинка" id="photo_img" /></p>
+            {{ form.avatar.label }}<br>
+            {{ form.avatar(class="form-control", type="file", accept="image/*", onChange="showFile(event)") }}<br>
+
+            {% for error in form.nickname.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.nickname.label }}<br>
+            {{ form.nickname(class="form-control") }}<br>
+            {% for error in form.nickname.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.status.label }}<br>
+            {{ form.status(class="form-control") }}<br>
+            {% for error in form.status.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.sex.label }}<br>
+            {{ form.sex(class="form-control") }}<br>
+            {% for error in form.sex.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.education.label }}<br>
+            {{ form.education(class="form-control") }}<br>
+            {% for error in form.education.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.marital_status.label }}<br>
+            {{ form.marital_status(class="form-control") }}<br>
+            {% for error in form.marital_status.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.birthday.label }}<br>
+            {{ form.birthday(class="form-control", type="date") }}<br>
+            {% for error in form.birthday.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>{{ form.remove_birthday() }} {{ form.remove_birthday.label }}</p>
+        <p>
+            {{ form.about_me.label }}<br>
+            {{ form.about_me(class="form-control") }}<br>
+            {% for error in form.about_me.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+
+        <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+        {% if message %} <div class="alert alert-danger">{{ message }}</div> {% endif %}
+    </form>
+</form>
+{% endblock %}

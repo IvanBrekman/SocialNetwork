@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block links %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/posts_page.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/posts_style.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>Новости</h1>
+
+<form id="display-block" class="card" style="width: 20rem" method="post">
+    <p class="card-body">
+        <b>{{ form.tags.label }}</b>{{ form.tags(class="form-control", size="6") }}
+        {% for error in form.tags.errors %}<br>
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endfor %}
+    </p>
+    <p class="card-body">
+        <b>{{ form.sort_by.label }}</b>{{ form.sort_by(class="form-control") }}
+        {% for error in form.sort_by.errors %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endfor %}
+        <div class="sort_type">
+            {% for subfield in form.sort_type %}
+                <div>{{ subfield }}{{ subfield.label }}</div>
+            {% endfor %}
+        </div>
+    </p>
+    <p class="card-footer">
+        {{ form.apply_btn(type="submit", class="btn btn-primary mt-3") }}
+        {{ form.default_btn(type="submit", class="btn btn-secondary mt-3") }}
+    </p>
+</form>
+
+{% if not posts %}
+    <div class="none">
+        <h1>Нет ни одного поста :(</h1>
+        <img src="../static/img/cat.png" alt="Грустный котик"/>
+    </div>
+{% else %}
+    <div id="news">
+        {% include '_post_view_pagination.html' %}
+        {% for post in posts %}
+            {% include '_post_card.html' %}
+        {% endfor %}
+        {% include '_post_view_pagination.html' %}
+    </div>
+{% endif %}
+{% endblock %}

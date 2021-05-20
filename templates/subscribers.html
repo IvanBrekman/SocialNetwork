@@ -1,0 +1,17 @@
+{% extends 'friends.html' %}
+
+{% block cards %}
+    {% if not users %}
+        <div class="none">
+            {% if method == "GET" %}
+                <h1>Отсутствует информация по данной категории</h1>
+            {% else %}
+                <h1>Подписчиков с таким никнеймом не найдено</h1>
+            {% endif %}
+            <img src="{{ url_for('static', filename='img/cat.png') }}" alt="Грустный котик"/>
+        </div>
+    {% endif %}
+    {% for user in users %}
+        {{ subscriber_card(user) }}
+    {% endfor %}
+{% endblock %}
