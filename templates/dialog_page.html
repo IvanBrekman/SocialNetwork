@@ -7,7 +7,7 @@
 {% block content %}
 <h1>Диалог с {{ user_to.nickname }}</h1>
 
-<a href="{{ url_for('user_dialogs', user_id=current_user.id) }}" class="btn btn-secondary fixed" style="font-size: 35px">⟽</a>
+<a href="#" onclick="history.back()" class="btn btn-secondary fixed" style="font-size: 35px">⟽</a>
 <a href="{{ url_for('users_dialog', id_from=current_user.id, id_to=user_to.id) }}{% if messages %}#message_{{ messages[-1].id }}{% endif %}" class="btn btn-primary rounded-fixed" style="font-size: 35px">⇓</a>
 
 <div id="dialog-card" class="card">

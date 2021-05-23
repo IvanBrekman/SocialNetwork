@@ -92,6 +92,58 @@ def get_user(session, user_id, check_auth=True) -> User:
     return user
 
 
+def get_user_status_info(questioner_user: User, target_user) -> dict:
+    response = {'buttons': None, 'status_text': None, 'status_style_color': None, 'type': None}
+    pp = app.config['USERS_PER_PAGE']
+
+    if target_user in questioner_user.friends():
+        response['buttons'] = f'''
+                <a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>
+                <a class="btn btn-danger" href="javascript:card_type('remove_friend', {questioner_user.id}, {target_user.id}, {math.ceil(len(questioner_user.friends()) // pp)})">Удалить из друзей</a>
+                '''
+        response['status_text'] = ' - Друг'
+        response['status_style_color'] = 'green'
+        response['type'] = 'friend'
+    elif target_user in questioner_user.subscribers():
+        response['buttons'] = f'''
+                        <a class="btn btn-success" href="javascript:card_type('add_friend', {questioner_user.id}, {target_user.id}, {math.ceil(len(questioner_user.subscribers()) // pp)})">Принять заявку</a>
+                        <a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>
+                        '''
+        response['status_text'] = ' - Подписчик'
+        response['status_style_color'] = 'red'
+        response['type'] = 'subscriber'
+    elif target_user in questioner_user.offers():
+        response['buttons'] = f'''
+                <a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>
+                <a class="btn btn-danger" href="javascript:card_type('remove_req', {questioner_user.id}, {target_user.id}, , {math.ceil(len(questioner_user.offers()) // pp)})">Отменить заявку</a>
+                '''
+        response['status_text'] = ' - Заявка в друзья'
+        response['status_style_color'] = 'darkgray'
+        response['type'] = 'offer'
+    else:
+        response['buttons'] = f'''
+        <a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>
+        <a class="btn btn-success" href="javascript:card_type('add_req', {questioner_user.id}, {target_user.id}, 0)">Добавить в друзья</a>
+        '''
+        response['status_text'] = ''
+        response['status_style_color'] = 'black'
+        response['type'] = 'usual'
+
+    return response
+
+
+def get_user_pagination_info(objects, referrer):
+    obj_type = 'USERS' if objects and isinstance(objects[0], User) else 'POSTS'
+    pp = app.config[f'{obj_type}_PER_PAGE']
+    page = request.args.get('page', 1, type=int) - 1
+    pages_amount = math.ceil(len(objects) / pp)
+    referrer = referrer
+    objects = objects[page * pp:(page + 1) * pp]
+
+    return {'pp': pp, 'cur_page': page, 'pages_amount': pages_amount,
+            'referrer': referrer, obj_type.lower(): objects}
+
+
 def get_post(session, post_id) -> Post:
     post = session.query(Post).get(post_id)
     if not post:
@@ -133,6 +185,12 @@ def favicon():
                                mimetype='image/vnd.microsoft.icon')
 
 
+@app.context_processor
+def app_context():
+    context = {'date': dt.utcnow, 'user_info': get_user_status_info}
+    return context
+
+
 @app.before_request
 def before_request():
     # Обновление времени последнего посещения пользователя
@@ -155,7 +213,6 @@ def index():
 
     tags = session.query(Tag).all()
     posts = get_suitable_posts(session)
-    print(current_user.unread_dialogs())
 
     rates = {post_rate.post.id: post_rate.value for post_rate in current_user.rates}
 
@@ -180,14 +237,8 @@ def index():
     form.sort_by.data = sort_by['field']
     form.sort_type.data = sort_by['type']
 
-    pp = app.config['POSTS_PER_PAGE']
-    page = request.args.get('page', 1, type=int) - 1
-    pages_amount = math.ceil(len(posts) / pp)
-    referrer = 'index'
-
     return render_template('posts.html', title='Новости', form=form, rates=rates,
-                           cur_page=page, pages_amount=pages_amount, referrer=referrer,
-                           posts=posts[page * pp:(page + 1) * pp], id=0)
+                           pagination=get_user_pagination_info(posts, 'index'), id=0)
 
 
 @app.route('/registration', methods=["GET", "POST"])
@@ -204,11 +255,16 @@ def registration():
         )
         user.set_password(form.password.data)
 
-        session.add(user)
-        session.commit()
-
-        login_user(user)
-        return redirect(url_for('home_page', user_id=current_user.id))
+        link = f'http://{host}:{port}/verifying_email/{user.nickname}/{user.email}' \
+               f'/{user.password}/{user.get_token()}'
+        send_email(
+            app=app, mail=mail,
+            subject='Change email',
+            sender=app.config['ADMINS'][0],
+            recipients=[form.email.data],
+            html_body=render_template('email_template.html', username=user.nickname, link=link)
+        )
+        return redirect(url_for('check_email'))
 
     return render_template('registration.html', title='Регистрация', form=form)
 
@@ -244,14 +300,8 @@ def home_page(user_id):
 
     rates = {post_rate.post.id: post_rate.value for post_rate in current_user.rates}
 
-    pp = app.config['POSTS_PER_PAGE']
-    page = request.args.get('page', 1, type=int) - 1
-    pages_amount = math.ceil(len(posts) / pp)
-    referrer = 'home_page'
-
     return render_template('home.html', title='Моя страница', user=user, rates=rates,
-                           cur_page=page, pages_amount=pages_amount, referrer=referrer,
-                           posts=posts[page * pp:(page + 1) * pp], id=user_id)
+                           pagination=get_user_pagination_info(posts, 'home_page'), id=user_id)
 
 
 @app.route('/edit_user/<int:user_id>', methods=["GET", "POST"])
@@ -315,7 +365,6 @@ def change_email(user_id):
     if request.method == 'GET':
         form.email.data = user.email
     if form.validate_on_submit():
-        print('try send')
         link = f'http://{host}:{port}/finish_changing/{user_id}/{form.email.data}/{user.get_token()}'
         send_email(
             app=app, mail=mail,
@@ -324,10 +373,29 @@ def change_email(user_id):
             recipients=[form.email.data],
             html_body=render_template('email_template.html', username=user.nickname, link=link)
         )
-        print('send')
         return redirect(url_for('check_email'))
 
     return render_template('confirm_email_form.html', title='Изменение почты', form=form)
+
+
+@app.route('/verifying_email/<nickname>/<email>/<password>/<token>')
+def finish_registration(nickname, email, password, token):
+    session = db_session.create_session()
+    user = User(
+        nickname=nickname,
+        email=email,
+        password=password
+    )
+
+    if user.verify_token(token):
+        session.add(user)
+        session.commit()
+
+        login_user(user)
+        return redirect(url_for('home_page', user_id=user.id))
+
+    h3 = 'Недействительный токен! Попробуйте зарегистрироваться заново.'
+    return render_template('message_page.html', title='Ошибка', h1='Ошибка!', h3=h3)
 
 
 @app.route('/finish_changing/<string:user_id>/<string:email>/<string:token>')
@@ -355,7 +423,6 @@ def recover_password():
     form = ConfirmEmailForm(emails, is_email_edit=False)
     if form.validate_on_submit():
         user = session.query(User).filter(User.email == form.email.data).first()
-        print('try send')
         link = f'http://{host}:{port}/new_password/{user.id}/{user.get_token()}'
         send_email(
             app=app, mail=mail,
@@ -364,7 +431,6 @@ def recover_password():
             recipients=[form.email.data],
             html_body=render_template('email_template.html', username=user.nickname, link=link)
         )
-        print('send')
         return redirect(url_for('check_email'))
 
     return render_template('confirm_email_form.html', title='Восстановление пароля', form=form,
@@ -589,7 +655,7 @@ def friends(user_id):
             return redirect(url_for('friends', user_id=user_id))
         users = list(filter(lambda u: form.nickname.data.lower() in u.nickname.lower(), users))
 
-    return render_template('friends.html', title=title, users=users, form=form,
+    return render_template('users_list.html', title=title, users=users, form=form,
                            method=request.method, c_user=user)
 
 
@@ -608,7 +674,7 @@ def subscribers(user_id):
             return redirect(url_for('subscribers', user_id=user_id))
         users = list(filter(lambda u: form.nickname.data.lower() in u.nickname.lower(), users))
 
-    return render_template('subscribers.html', title=title, users=users, form=form,
+    return render_template('users_list.html', title=title, users=users, form=form,
                            method=request.method, c_user=user)
 
 
@@ -626,7 +692,7 @@ def offers(user_id):
             return redirect(url_for('offers', user_id=user_id))
         users = list(filter(lambda u: form.nickname.data.lower() in u.nickname.lower(), users))
 
-    return render_template('offers.html', title='Мои заявки', users=users, form=form,
+    return render_template('users_list.html', title='Мои заявки', users=users, form=form,
                            method=request.method, c_user=user)
 
 
@@ -642,13 +708,14 @@ def add_friend_page(user_id):
     if form.validate_on_submit():
         users = list(filter(lambda u: form.nickname.data.lower() in u.nickname.lower(), users))
 
-    return render_template('add_friend_list.html', title='Добавить друга', c_user=user, users=users,
-                           form=form)
+    return render_template('users_list.html', title='Добавить друга', form=form,
+                           method=request.method, c_user=user,
+                           pagination=get_user_pagination_info(users, 'add_friend_page'), id=user_id)
 
 
-@app.route('/friendship_requests/<string:request_type>/<int:id_from>/<int:id_to>')
+@app.route('/friendship_requests', methods=['POST'])
 @login_required
-def friendship_requests(request_type, id_from, id_to):
+def friendship_requests():
     def get_offer_by_ids(from_: list, to_: list):
         req = session.query(FriendshipOffer).filter(FriendshipOffer.id_from.in_(from_),
                                                     FriendshipOffer.id_to.in_(to_)).first()
@@ -661,8 +728,13 @@ def friendship_requests(request_type, id_from, id_to):
 
     session = db_session.create_session()
     requests = ('add_req', 'remove_req', 'add_friend', 'remove_friend')
+    
+    request_type = request.form['request_type']
+    id_from = request.form['id_from']
+    id_to = request.form['id_to']
 
-    get_user(session, id_from), get_user(session, id_to, check_auth=False)
+    user_from = get_user(session, id_from)
+    user_to = get_user(session, id_to, check_auth=False)
     if request_type not in requests:
         raise ValueError(f'Incorrect request_type. Expected one of {requests}, got {request_type}')
 
@@ -693,10 +765,9 @@ def friendship_requests(request_type, id_from, id_to):
 
     session.commit()
 
-    if request.referrer.split('/')[-2] == 'add_friend_list':
-        return redirect(url_for('add_friend_page', user_id=id_from, _anchor=f'user_{id_to}'))
-    else:
-        return redirect(request.referrer)
+    response = get_user_status_info(user_from, user_to)
+    print(response)
+    return jsonify(response)
 
 
 @app.route('/dialogs/<int:user_id>')
@@ -751,7 +822,6 @@ def users_dialog(id_from, id_to):
         user_to.add_notification(session, 'unread_messages', len(user_to.unread_dialogs()))
         user_to.add_notification(session, 'need_update_dialogs',
                                  render_template('_dialogs_card.html', data=data, sender=user_to))
-        print(render_template('_dialogs_card.html', data=data, sender=user_to))
 
         return redirect(url_for('users_dialog', id_from=id_from, id_to=id_to,
                                 _anchor=f'message_{message.id}'))
@@ -766,8 +836,13 @@ def notifications():
     since = request.args.get('since', 0.0, type=float)
     n = session.query(Notification).filter(Notification.timestamp > since, Notification.user ==
                                            current_user).order_by(Notification.timestamp)
-    return jsonify([{'name': ntf.name, 'data': ntf.get_data(), 'timestamp': ntf.timestamp}
-                   for ntf in n])
+    response = [{'name': ntf.name, 'data': ntf.get_data(), 'timestamp': ntf.timestamp}
+                for ntf in n]
+    for ntf in n:
+        session.delete(ntf)
+    session.commit()
+
+    return jsonify(response)
 
 
 if __name__ == '__main__':

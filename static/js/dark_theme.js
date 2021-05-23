@@ -6,7 +6,6 @@ function getCookie(name) {
 }
 
 function setCookie(name, value, options = {}) {
-
     options = {
         path: '/',
         // при необходимости добавьте другие значения по умолчанию
@@ -44,8 +43,6 @@ function fillPage(col){
         }
         let cards=document.getElementsByClassName("card")
         let labels=document.getElementsByTagName("label")
-        console.log(col)
-        console.log(oppositeColor(oppositeColor(col).background).form)
         for (let i = 0; i < cards.length; i++) {
             cards[i].style.background = oppositeColor(oppositeColor(col).background).form
         }

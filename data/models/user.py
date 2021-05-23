@@ -38,11 +38,11 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
                          lazy='subquery')
     rates = orm.relation("PostRate", back_populates="user", lazy='subquery')
 
-    _subscribers = orm.relationship("FriendshipOffer", back_populates='user_to', lazy='subquery',
+    _subscribers = orm.relationship("FriendshipOffer", back_populates='user_to', lazy='dynamic',
                                     primaryjoin='User.id == FriendshipOffer.id_to')
-    _offers = orm.relationship('FriendshipOffer', back_populates='user_from', lazy='subquery',
+    _offers = orm.relationship('FriendshipOffer', back_populates='user_from', lazy='dynamic',
                                primaryjoin='User.id == FriendshipOffer.id_from')
-    _friends = orm.relationship('Friend', lazy='subquery',
+    _friends = orm.relationship('Friend', lazy='dynamic',
                                 primaryjoin='or_(User.id == Friend.id1, User.id == Friend.id2)')
     dialogs = orm.relationship('Dialog', lazy='subquery',
                                primaryjoin='or_(User.id == Dialog.id1, User.id == Dialog.id2)')
@@ -57,7 +57,7 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
         return check_password_hash(self.password, password)
 
     def get_token(self, expires_in=300):
-        return jwt.encode({'user': self.id, 'exp': time.time() + expires_in},
+        return jwt.encode({'user': self.nickname, 'exp': time.time() + expires_in},
                           Config.SECRET_KEY, algorithm='HS256')
 
     @staticmethod

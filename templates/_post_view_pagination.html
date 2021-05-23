@@ -1,15 +1,17 @@
-<nav aria-label="Page navigation example">
+{% if pagination is defined and  pagination['pages_amount'] > 1 %}
+<nav>
     <ul class="pagination pagination-lg justify-content-center">
-        <li class="page-item {% if cur_page == 0 %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for(referrer, user_id=id, page=cur_page, _anchor='news') }}" tabindex="-1">&laquo;</a>
+        <li class="page-item {% if pagination['cur_page'] == 0 %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for(pagination['referrer'], user_id=id, page=pagination['cur_page'], _anchor='news') }}" tabindex="-1">&laquo;</a>
         </li>
-        {% for page_num in range(1, pages_amount + 1) %}
-        <li class="page-item {% if page_num == cur_page + 1 %}active{% endif %}">
-            <a class="page-link" href="{{ url_for(referrer, user_id=id, page=page_num, _anchor='news') }}">{{ page_num }}</a>
+        {% for page_num in range(1, pagination['pages_amount'] + 1) %}
+        <li class="page-item {% if page_num == pagination['cur_page'] + 1 %}active{% endif %}">
+            <a class="page-link" href="{{ url_for(pagination['referrer'], user_id=id, page=page_num, _anchor='news') }}">{{ page_num }}</a>
         </li>
         {% endfor %}
-        <li class="page-item {% if cur_page == pages_amount - 1 %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for(referrer, user_id=id, page=cur_page + 2, _anchor='news') }}">&raquo;</a>
+        <li class="page-item {% if pagination['cur_page'] == pagination['pages_amount'] - 1 %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for(pagination['referrer'], user_id=id, page=pagination['cur_page'] + 2, _anchor='news') }}">&raquo;</a>
         </li>
     </ul>
 </nav>
+{% endif %}

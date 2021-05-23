@@ -8,7 +8,7 @@
 {% block content %}
 <h1>Новости</h1>
 
-<form id="display-block" class="card" style="width: 20rem" method="post">
+<form id="display-block" class="card" style="width: 20%" method="post">
     <p class="card-body">
         <b>{{ form.tags.label }}</b>{{ form.tags(class="form-control", size="6") }}
         {% for error in form.tags.errors %}<br>
@@ -36,7 +36,7 @@
     </p>
 </form>
 
-{% if not posts %}
+{% if not pagination['posts'] %}
     <div class="none">
         <h1>Нет ни одного поста :(</h1>
         <img src="../static/img/cat.png" alt="Грустный котик"/>
@@ -44,7 +44,7 @@
 {% else %}
     <div id="news">
         {% include '_post_view_pagination.html' %}
-        {% for post in posts %}
+        {% for post in pagination['posts'] %}
             {% include '_post_card.html' %}
         {% endfor %}
         {% include '_post_view_pagination.html' %}

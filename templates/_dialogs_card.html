@@ -18,7 +18,7 @@
                         <a href="{{ url_for('users_dialog', id_from=sender.id, id_to=receiver.id) }}" class="btn btn-info">К диалогу</a>
                         <span style="font-size: 25px; color: gray" class="offset-md-1"><b>Вы: </b></span>
                         <span style="font-size: 25px">{{ last_message.get_abbreviated_message(30) }}</span>
-                        <span style="color: gray; text-align: right"> - {{ moment(last_message.send_date).calendar() }}</span>
+                        <span id="send_time_{{ receiver.id }}" style="color: gray; text-align: right"></span>
                         {% if not last_message.is_read %}
                             <span style="color: orangered">Не прочитано</span>
                         {% else %}
@@ -30,7 +30,7 @@
                         <a href="{{ url_for('users_dialog', id_from=sender.id, id_to=receiver.id) }}" class="btn btn-info">К диалогу</a>
                         <span style="font-size: 25px" class="offset-md-1">{{ last_message.get_abbreviated_message(50) }}</span>
                         {% set unw_mes = dialog.unread_messages_amount(sender.id) %}
-                        <span style="color: gray; text-align: right"> - {{ moment(last_message.send_date).calendar() }}</span>
+                        <span id="send_time_{{ receiver.id }}" style="color: gray; text-align: right"></span>
                     </td>
                     {% if unw_mes != 0 %}
                     <td style="text-align: right">
@@ -39,12 +39,15 @@
                 {% endif %}
                 </table>
             </li>
+            <script>
+                set_time('send_time_{{ receiver.id }}', '{{ last_message.send_date }}')
+            </script>
         {% endif %}
     {% endfor %}
 </ul>
 {% else %}
     <div class="none">
-        <h1>Отсутствует информация по данной категории</h1>
+        <h1>У вас еще нет ни с кем диалога</h1>
         <img src="{{ url_for('static', filename='img/cat.png') }}" alt="Грустный котик"/>
     </div>
 {% endif %}

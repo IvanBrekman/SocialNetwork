@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block links %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/posts_style.css') }}">
+{% endblock %}
+
+{% macro friendship_card(user) %}
+    {% set info = user_info(c_user, user) %}
+    {% set friend %}
+        <a class="btn btn-primary" href="{{ url_for('users_dialog', id_from=c_user.id, id_to=user.id) }}">Написать</a>
+        <a class="btn btn-danger" href="javascript:card_type('remove_friend', {{ c_user.id }}, {{ user.id }})">Удалить из друзей</a>
+    {% endset %}
+    {% set subscriber %}
+        <a class="btn btn-success" href="javascript:card_type('add_friend', {{ c_user.id }}, {{ user.id }})">Принять заявку</a>
+        <a class="btn btn-primary" href="{{ url_for('users_dialog', id_from=c_user.id, id_to=user.id) }}">Написать</a>
+    {% endset %}
+    {% set offer %}
+        <a class="btn btn-primary" href="{{ url_for('users_dialog', id_from=c_user.id, id_to=user.id) }}">Написать</a>
+        <a class="btn btn-danger" href="javascript:card_type('remove_req', {{ c_user.id }}, {{ user.id }})">Отменить заявку</a>
+    {% endset %}
+    {% set usual %}
+        <a class="btn btn-primary" href="{{ url_for('users_dialog', id_from=c_user.id, id_to=user.id) }}">Написать</a>
+        <a class="btn btn-success" href="javascript:card_type('add_req', {{ c_user.id }}, {{ user.id }})">Добавить в друзья</a>
+    {% endset %}
+
+    <div id="user_{{ user.id }}" class="card post-card">
+        <div class="card-header">
+            <img class="author-img round" src="{{ url_for('static', filename='img/users_img/' + user.img + '.jpg') }}" alt="Фотография друга">
+
+            <a href="{{ url_for('home_page', user_id=user.id) }}" style="font-size: 30px"><b>{{ user.nickname }}</b></a>
+            <span id="user_{{ user.id }}_status" style="font-size: 20px; color: {{ info['status_style_color'] }}">
+                {{ info['status_text'].encode(encoding='utf-8').decode('utf-8') }}
+            </span><br>
+            <span style="font-size: 15px">Статус: {{ user.status }}</span>
+        </div>
+
+        {% if current_user == c_user %}
+        <div id="user_{{ user.id }}_buttons" class="card-footer">
+            {% if info['type'] == 'friend' %} {{ friend }} {% elif info['type'] == 'subscriber' %} {{ subscriber }} {% elif info['type'] == 'offer' %} {{ offer }} {% else %} {{ usual }} {% endif %}
+        </div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% block content %}
+    <h1>{{ title }}</h1>
+    {% include '_find_user_form.html' %}
+
+    {% set users = pagination['users'] if pagination is defined else users %}
+    {% if not users %}
+        <div class="none">
+            {% if method == "GET" %}
+                <h1>Отсутствует информация по данной категории</h1>
+            {% else %}
+                <h1>Друзей с таким никнеймом не найдено</h1>
+            {% endif %}
+            <img src="{{ url_for('static', filename='img/cat.png') }}" alt="Грустный котик"/>
+        </div>
+    {% else %}
+        <div id="users_friendship_cards">
+            {% include '_post_view_pagination.html' %}
+            {% for user in users %}
+                {{ friendship_card(user) }}
+            {% endfor %}
+            {% include '_post_view_pagination.html' %}
+        </div>
+    {% endif %}
+{% endblock %}

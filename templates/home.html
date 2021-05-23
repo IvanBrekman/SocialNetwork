@@ -8,9 +8,9 @@
 {% block content %}
 <h1>Моя страница</h1>
 <div class="container">
-    <div class="row">
+    <div class="row" style="width: 100%">
 
-        <div id="user-avatar-card" class="card col-1" style="width: 18rem; height: 30rem">
+        <div id="user-avatar-card" class="card" style="width: 20%; height: 30rem">
             <br>
             <img class="card-img-top" src="{{ url_for('static', filename='img/users_img/' + user.img + '.jpg') }}" alt="Ваша фотография">
 
@@ -32,7 +32,7 @@
             {% endif %}
         </div>
 
-        <div id="user-info-card" class="card col-5 offset-md-2">
+        <div id="user-info-card" class="card" style="width: 50%; margin-right: 5%; margin-left: 5%">
             <div class="card-header">
                 <h3 class="card-title">{{ user.nickname }}</h3>
                 <span style="color: gray;">Последний раз онлайн - {{ moment(user.last_seen).fromNow() }}</span>
@@ -78,14 +78,14 @@
             {% endif %}
         </div>
 
-        <div class="card col-3 offset-md-1">
+        <div class="card" style="width: 20%">
             <div class="card-header">
                 <h4>Друзья: {{ user.friends()|length }}</h4>
             </div>
 
             <div class="card-body">
                 {% for friend in user.friends() %}
-                {% if loop.index <= 5 %}
+                {% if loop.index <= 4 %}
                     <img class="friend-round-img" src="{{ url_for('static', filename='img/users_img/' + friend.img + '.jpg') }}" alt="Фотография друга">
                     <a href="{{ url_for('home_page', user_id=friend.id) }}" style="font-size: 15px"><b>{{ friend.nickname }}</b></a>
                     <br>
@@ -101,7 +101,7 @@
             </div>
             <div class="card-body">
                 {% for subscriber in user.subscribers() %}
-                {% if loop.index <= 5 %}
+                {% if loop.index <= 4 %}
                     <img class="friend-round-img" src="{{ url_for('static', filename='img/users_img/' + subscriber.img + '.jpg') }}" alt="Фотография подписчика">
                     <a href="{{ url_for('home_page', user_id=subscriber.id) }}" style="font-size: 15px"><b>{{ subscriber.nickname }}</b></a>
                     <br>
@@ -121,19 +121,19 @@
 <a class="btn btn-primary add-post" href="{{ url_for('add_post') }}">Новый пост</a>
 {% endif %}
 
-{% if not posts %}
+{% if not pagination['posts'] %}
     <div class="none">
         {% if user == current_user %}
         <h1>Вы не выложили ни одного поста :(</h1>
         {% else %}
         <h1>Этот пользователь не выложил ни одного поста :(</h1>
         {% endif %}
-        <img src=".{{ url_for('static', filename='img/cat.png') }}" alt="Грустный котик"/>
+        <img src="{{ url_for('static', filename='img/cat.png') }}" alt="Грустный котик"/>
     </div>
 {% else %}
     <div id="news">
         {% include '_post_view_pagination.html' %}
-        {% for post in posts %}
+        {% for post in pagination['posts'] %}
             {% include '_post_card.html' %}
         {% endfor %}
         {% include '_post_view_pagination.html' %}
