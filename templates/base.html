@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>{{title}}</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css"
@@ -29,12 +29,20 @@
             <a class="nav-item nav-link" style="color: white" id="dia" href="{{ url_for('user_dialogs', user_id=current_user.id) }}"   role="tab" aria-selected="false">
                 Диалоги
                 {% set unm = current_user.unread_dialogs()|length %}
-                <span id="message_count" class="badge rounded-pill bg-secondary" style="visibility: {% if unm %}visible{% else %}hidden{% endif %}">{{ unm }}</span>
+                <span id="dialogs_count" class="badge rounded-pill bg-secondary" style="visibility: {% if unm %}visible{% else %}hidden{% endif %}">{{ unm }}</span>
             </a>
-            <a class="nav-link dropdown-toggle" style="color: white" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Друзья</a>
+            <a class="nav-link dropdown-toggle" style="color: white" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+                Друзья
+                {% set uns = current_user.unanswered_subscribers()|length %}
+                <span id="unanswered_subscribers_count1" class="badge rounded-pill bg-secondary" style="visibility: {% if uns %}visible{% else %}hidden{% endif %}">{{ uns }}</span>
+            </a>
             <div class="dropdown-menu">
                 <a class="dropdown-item" href="{{ url_for('friends', user_id=current_user.id) }}">Мои друзья</a>
-                <a class="dropdown-item" href="{{ url_for('subscribers', user_id=current_user.id) }}">Мои подписчики</a>
+                <a class="dropdown-item" href="{{ url_for('subscribers', user_id=current_user.id) }}">
+                    Мои подписчики
+                    {% set uns = current_user.unanswered_subscribers()|length %}
+                    <span id="unanswered_subscribers_count2" class="badge rounded-pill bg-secondary" style="visibility: {% if uns %}visible{% else %}hidden{% endif %}">{{ uns }}</span>
+                </a>
                 <a class="dropdown-item" href="{{ url_for('offers', user_id=current_user.id) }}">Мои запросы дружбы</a>
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item" href="{{ url_for('add_friend_page', user_id=current_user.id) }}">Добавить друга</a>

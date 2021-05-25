@@ -8,6 +8,12 @@
     width: 70%;
 }
 
+.message_form {
+    width: 100%;
+    margin-left: 0;
+    text-align: center;
+}
+
 .fixed {
     position: fixed;
     margin-left: 10%;

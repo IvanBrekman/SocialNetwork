@@ -16,6 +16,8 @@ class FriendshipOffer(SqlAlchemyBase):
     id_to = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('users.id'))
     user_to = orm.relationship('User', foreign_keys=[id_to], lazy='subquery')
 
+    is_answered = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
+
 
 class Friend(SqlAlchemyBase):
     """ Класс-модель для описания друзей """

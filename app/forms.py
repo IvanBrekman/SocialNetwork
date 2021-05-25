@@ -106,4 +106,4 @@ class FindUserForm(FlaskForm):
 
 class SendMessageForm(FlaskForm):
     message = StringField('Ваше сообщение', validators=[DataRequired()])
-    submit = SubmitField('Отправить')
+    submit = SubmitField('▲')

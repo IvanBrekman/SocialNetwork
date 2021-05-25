@@ -44,6 +44,9 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
                                primaryjoin='User.id == FriendshipOffer.id_from')
     _friends = orm.relationship('Friend', lazy='dynamic',
                                 primaryjoin='or_(User.id == Friend.id1, User.id == Friend.id2)')
+    _unanswered_ss = orm.relationship("FriendshipOffer", back_populates='user_to', lazy='subquery',
+                                      primaryjoin='User.id == FriendshipOffer.id_to and not '
+                                                  'FriendshipOffer.is_answered')
     dialogs = orm.relationship('Dialog', lazy='subquery',
                                primaryjoin='or_(User.id == Dialog.id1, User.id == Dialog.id2)')
     messages = orm.relationship('Message', back_populates='user_to', lazy='subquery',
@@ -69,7 +72,6 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
         return user_id
 
     def add_notification(self, session, name, data):
-        self.notifications.filter_by(name=name).delete()
         notification = Notification(name=name, data=json.dumps(data), user=self)
 
         session.add(notification)
@@ -86,7 +88,16 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
             return 'Не указано'
 
     def subscribers(self):
-        return [offer.user_from for offer in self._subscribers]
+        return [offer.user_from for offer in sorted(self._subscribers, key=lambda o: o.is_answered)]
+
+    def unanswered_subscribers(self):
+        return [offer for offer in self._unanswered_ss if not offer.is_answered]
+
+    def need_answer(self, user):
+        for offer in self._unanswered_ss:
+            if offer.user_from == user and not offer.is_answered:
+                return True
+        return False
 
     def offers(self):
         return [offer.user_to for offer in self._offers]

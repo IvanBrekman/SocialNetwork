@@ -5,8 +5,10 @@ import locale
 import logging
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
+from urllib.parse import unquote
 from sqlalchemy import asc, desc, or_, and_
 from datetime import datetime as dt
 from logging.handlers import SMTPHandler
@@ -94,37 +96,36 @@ def get_user(session, user_id, check_auth=True) -> User:
 
 def get_user_status_info(questioner_user: User, target_user) -> dict:
     response = {'buttons': None, 'status_text': None, 'status_style_color': None, 'type': None}
-    pp = app.config['USERS_PER_PAGE']
 
     if target_user in questioner_user.friends():
-        response['buttons'] = f'''
-                <a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>
-                <a class="btn btn-danger" href="javascript:card_type('remove_friend', {questioner_user.id}, {target_user.id}, {math.ceil(len(questioner_user.friends()) // pp)})">Удалить из друзей</a>
-                '''
+        response['buttons'] = [
+            f'''<a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>''',
+            f'''<a class="btn btn-danger" href="javascript:card_type('remove_friend', {questioner_user.id}, {target_user.id})">Удалить из друзей</a>'''
+        ]
         response['status_text'] = ' - Друг'
         response['status_style_color'] = 'green'
         response['type'] = 'friend'
     elif target_user in questioner_user.subscribers():
-        response['buttons'] = f'''
-                        <a class="btn btn-success" href="javascript:card_type('add_friend', {questioner_user.id}, {target_user.id}, {math.ceil(len(questioner_user.subscribers()) // pp)})">Принять заявку</a>
-                        <a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>
-                        '''
+        response['buttons'] = [
+            f'''<a class="btn btn-success" href="javascript:card_type('add_friend', {questioner_user.id}, {target_user.id})">Принять заявку</a>'''
+            f'''<a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>'''
+        ]
         response['status_text'] = ' - Подписчик'
         response['status_style_color'] = 'red'
         response['type'] = 'subscriber'
     elif target_user in questioner_user.offers():
-        response['buttons'] = f'''
-                <a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>
-                <a class="btn btn-danger" href="javascript:card_type('remove_req', {questioner_user.id}, {target_user.id}, , {math.ceil(len(questioner_user.offers()) // pp)})">Отменить заявку</a>
-                '''
+        response['buttons'] = [
+            f'''<a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>'''
+            f'''<a class="btn btn-danger" href="javascript:card_type('remove_req', {questioner_user.id}, {target_user.id})">Отменить заявку</a>'''
+        ]
         response['status_text'] = ' - Заявка в друзья'
         response['status_style_color'] = 'darkgray'
         response['type'] = 'offer'
     else:
-        response['buttons'] = f'''
-        <a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>
-        <a class="btn btn-success" href="javascript:card_type('add_req', {questioner_user.id}, {target_user.id}, 0)">Добавить в друзья</a>
-        '''
+        response['buttons'] = [
+            f'''<a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>'''
+            f'''<a class="btn btn-success" href="javascript:card_type('add_req', {questioner_user.id}, {target_user.id})">Добавить в друзья</a>'''
+        ]
         response['status_text'] = ''
         response['status_style_color'] = 'black'
         response['type'] = 'usual'
@@ -312,29 +313,29 @@ def edit_user(user_id):
 
     form = EditUserForm()
     if request.method == "GET":
-        form.avatar.data         = f'static/img/users_img/{user.img}.jpg'
-        form.nickname.data       = user.nickname
-        form.status.data         = user.status
-        form.sex.data            = user.sex
-        form.education.data      = user.education
+        form.avatar.data = f'static/img/users_img/{user.img}.jpg'
+        form.nickname.data = user.nickname
+        form.status.data = user.status
+        form.sex.data = user.sex
+        form.education.data = user.education
         form.marital_status.data = user.marital_status
-        form.birthday.data       = user.birthday.date() if user.birthday != dt(1800, 1, 1) else None
-        form.about_me.data       = user.about_me
+        form.birthday.data = user.birthday.date() if user.birthday != dt(1800, 1, 1) else None
+        form.about_me.data = user.about_me
 
     if form.validate_on_submit():
-        user.nickname       = form.nickname.data
-        user.status         = form.status.data or 'Не указано'
-        user.sex            = form.sex.data
-        user.education      = form.education.data or 'Не указано'
+        user.nickname = form.nickname.data
+        user.status = form.status.data or 'Не указано'
+        user.sex = form.sex.data
+        user.education = form.education.data or 'Не указано'
         user.marital_status = form.marital_status.data
-        user.about_me       = form.about_me.data or 'Не указано'
+        user.about_me = form.about_me.data or 'Не указано'
         try:
-            user.birthday   = dt.strptime(form.birthday.data, '%Y-%m-%d')
+            user.birthday = dt.strptime(form.birthday.data, '%Y-%m-%d')
         except ValueError:
-            user.birthday   = dt(1800, 1, 1)
+            user.birthday = dt(1800, 1, 1)
 
         if form.remove_birthday.data:
-            user.birthday   = dt(1800, 1, 1)
+            user.birthday = dt(1800, 1, 1)
 
         if form.avatar.data:
             if user.img != 'default':
@@ -703,7 +704,7 @@ def add_friend_page(user_id):
     user = get_user(session, user_id, check_auth=False)
 
     users = session.query(User).filter(User.id != user_id).all()
-    
+
     form = FindUserForm()
     if form.validate_on_submit():
         users = list(filter(lambda u: form.nickname.data.lower() in u.nickname.lower(), users))
@@ -728,7 +729,7 @@ def friendship_requests():
 
     session = db_session.create_session()
     requests = ('add_req', 'remove_req', 'add_friend', 'remove_friend')
-    
+
     request_type = request.form['request_type']
     id_from = request.form['id_from']
     id_to = request.form['id_to']
@@ -741,9 +742,14 @@ def friendship_requests():
     if request_type == 'add_req':
         offer = FriendshipOffer(id_from=id_from, id_to=id_to)
         session.add(offer)
+        user_to.add_notification(session, 'new_friendship_request',
+                                 len(user_to.unanswered_subscribers()) + 1)
     elif request_type == 'remove_req':
         offer = get_offer_by_ids([id_from], [id_to])
         session.delete(offer)
+        if user_to.need_answer(user_from):
+            user_to.add_notification(session, 'new_friendship_request',
+                                     len(user_to.unanswered_subscribers()) - 1)
     elif request_type == 'add_friend':
         offer = get_offer_by_ids([id_from, id_to], [id_to, id_from])
         session.delete(offer)
@@ -760,14 +766,32 @@ def friendship_requests():
                                f'There is friend note with same ids. Note id: {friend.id}')
         session.delete(friend)
 
-        offer = FriendshipOffer(id_to=id_from, id_from=id_to)
+        offer = FriendshipOffer(id_to=id_from, id_from=id_to, is_answered=True)
         session.add(offer)
 
     session.commit()
 
     response = get_user_status_info(user_from, user_to)
-    print(response)
     return jsonify(response)
+
+
+@app.route('/answer_offer', methods=['POST'])
+@login_required
+def answer_for_friendship_offer():
+    session = db_session.create_session()
+
+    user_from = get_user(session, request.form['user_from'], check_auth=False)
+    user_to = get_user(session, request.form['user_to'])
+
+    offer = session.query(FriendshipOffer).filter(FriendshipOffer.user_from == user_from,
+                                                  FriendshipOffer.user_to == user_to).first()
+    if not offer:
+        raise ValueError(f'There are no FriendshipOffer between {user_from.id} and {user_to.id}')
+
+    offer.is_answered = True
+    session.commit()
+
+    return {}
 
 
 @app.route('/dialogs/<int:user_id>')
@@ -776,7 +800,7 @@ def user_dialogs(user_id):
     session = db_session.create_session()
     user = get_user(session, user_id, check_auth=False)
 
-    data = {dialog: dialog.messages[-1] for dialog in user.dialogs if dialog.messages}
+    data = {dialog: dialog.messages[-1] for dialog in user.dialogs if list(dialog.messages)}
     data = {dialog: data[dialog] for dialog in
             sorted(data, key=lambda d: data[d].send_date, reverse=True)}
 
@@ -792,41 +816,82 @@ def users_dialog(id_from, id_to):
     user_to = get_user(session, id_to, check_auth=False)
 
     dialog = session.query(Dialog).filter(or_(and_(Dialog.id1 == id_from, Dialog.id2 == id_to),
-                                          and_(Dialog.id1 == id_to, Dialog.id2 == id_from))).first()
+                                              and_(Dialog.id1 == id_to,
+                                                   Dialog.id2 == id_from))).first()
     if not dialog:
         dialog = Dialog(id1=id_from, id2=id_to)
         session.add(dialog)
         session.commit()
 
-    for message in dialog.messages:
-        if message.id_to == current_user.id:
-            message.is_read = True
+    msg_ids = []
+    for message in dialog.unread_messages(id_from):
+        message.is_read = True
+        msg_ids.append(str(message.id))
+    data = f'{user_from.id} {user_to.id},{" ".join(msg_ids)}'
+
     session.commit()
     user_from.add_notification(session, 'unread_messages', len(user_from.unread_dialogs()))
+    user_to.add_notification(session, 'messages_read', data)
 
     form = SendMessageForm()
-    if request.method == 'POST':
-        message = Message(
-            dialog_id=dialog.id,
-            id_from=id_from,
-            id_to=id_to,
-            content=form.message.data
-        )
-        session.add(message)
-        session.commit()
-
-        data = {dialog: dialog.messages[-1] for dialog in user_to.dialogs if dialog.messages}
-        data = {dialog: data[dialog] for dialog in
-                sorted(data, key=lambda d: data[d].send_date, reverse=True)}
-
-        user_to.add_notification(session, 'unread_messages', len(user_to.unread_dialogs()))
-        user_to.add_notification(session, 'need_update_dialogs',
-                                 render_template('_dialogs_card.html', data=data, sender=user_to))
-
-        return redirect(url_for('users_dialog', id_from=id_from, id_to=id_to,
-                                _anchor=f'message_{message.id}'))
     return render_template('dialog_page.html', title='Диалоги', messages=dialog.messages,
-                           user_to=user_to, form=form)
+                           user_to=user_to, form=form, dialog=dialog)
+
+
+@app.route('/append_message', methods=['POST'])
+@login_required
+def append_message():
+    session = db_session.create_session()
+
+    dialog_id = request.form['dialog']
+    id_from = request.form['id_from']
+    id_to = request.form['id_to']
+    content = unquote(request.form['form'].split('=')[1]).replace('+', ' ')
+
+    user_to = get_user(session, id_to, check_auth=False)
+
+    message = Message(
+        dialog_id=dialog_id,
+        id_from=id_from,
+        id_to=id_to,
+        content=content
+    )
+    session.add(message)
+    session.commit()
+
+    own_msg = f'''<div id="time_{message.id}" style="color: gray; text-align: right"></div>
+                  <div id="message_{message.id}" class="alert alert-primary user-from-message">
+                  <span id="message_text_{message.id}" style="color: orangered">Не прочитано - 
+                  </span>{message.content}</div>'''
+    rec_msg = f'''<div id="time_{message.id}" style="color: gray"></div>
+                  <div id="message_{message.id}" class="alert alert-secondary user-to-message">
+                  {message.content}</div>'''
+
+    data = {dialog: dialog.messages[-1] for dialog in user_to.dialogs if list(dialog.messages)}
+    data = {dialog: data[dialog] for dialog in
+            sorted(data, key=lambda d: data[d].send_date, reverse=True)}
+
+    user_to.add_notification(session, 'unread_messages', len(user_to.unread_dialogs()))
+    user_to.add_notification(session, 'need_update_dialogs',
+                             render_template('_dialogs_card.html', data=data, sender=user_to))
+    user_to.add_notification(session, 'need_add_message',
+                             f'{message.id}+++{message.send_date}+++{rec_msg}+++{id_from}')
+
+    return {'message_block': own_msg, 'id': message.id, 'time': str(message.send_date)}
+
+
+@app.route('/messages_read', methods=['POST'])
+@login_required
+def messages_read():
+    session = db_session.create_session()
+
+    user = get_user(session, request.form['user'], check_auth=False)
+    message = session.query(Message).get(request.form['id'])
+
+    message.is_read = True
+    user.add_notification(session, 'messages_read', f',{message.id}')
+
+    return {}
 
 
 @app.route('/notifications')

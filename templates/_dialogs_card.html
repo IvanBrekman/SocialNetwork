@@ -15,19 +15,19 @@
                 <table width="100%">
                 {% if last_message.user_from == sender %}
                     <td>
-                        <a href="{{ url_for('users_dialog', id_from=sender.id, id_to=receiver.id) }}" class="btn btn-info">К диалогу</a>
+                        <a href="{{ url_for('users_dialog', id_from=sender.id, id_to=receiver.id, _anchor='message_' + last_message.id|string) }}" class="btn btn-info">К диалогу</a>
                         <span style="font-size: 25px; color: gray" class="offset-md-1"><b>Вы: </b></span>
                         <span style="font-size: 25px">{{ last_message.get_abbreviated_message(30) }}</span>
                         <span id="send_time_{{ receiver.id }}" style="color: gray; text-align: right"></span>
                         {% if not last_message.is_read %}
-                            <span style="color: orangered">Не прочитано</span>
+                            <span id="{{ sender.id }}_{{ receiver.id }}_dialog" style="color: orangered">Не прочитано</span>
                         {% else %}
-                            <span style="color: deepskyblue">Прочитано</span>
+                            <span id="{{ sender.id }}_{{ receiver.id }}_dialog" style="color: deepskyblue">Прочитано</span>
                         {% endif %}
                     </td>
                 {% else %}
                     <td>
-                        <a href="{{ url_for('users_dialog', id_from=sender.id, id_to=receiver.id) }}" class="btn btn-info">К диалогу</a>
+                        <a href="{{ url_for('users_dialog', id_from=sender.id, id_to=receiver.id, _anchor='message_' + last_message.id|string) }}" class="btn btn-info">К диалогу</a>
                         <span style="font-size: 25px" class="offset-md-1">{{ last_message.get_abbreviated_message(50) }}</span>
                         {% set unw_mes = dialog.unread_messages_amount(sender.id) %}
                         <span id="send_time_{{ receiver.id }}" style="color: gray; text-align: right"></span>

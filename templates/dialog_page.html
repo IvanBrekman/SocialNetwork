@@ -11,22 +11,36 @@
 <a href="{{ url_for('users_dialog', id_from=current_user.id, id_to=user_to.id) }}{% if messages %}#message_{{ messages[-1].id }}{% endif %}" class="btn btn-primary rounded-fixed" style="font-size: 35px">⇓</a>
 
 <div id="dialog-card" class="card">
-    <div class="card-body">
+    <div id="messages" class="card-body">
         {% for message in messages %}
-        {% if message.user_from == current_user %}
-            <div style="color: gray; text-align: right">{{ moment(message.send_date).format('LLL') }}</div>
-            <div id="message_{{ message.id }}" class="alert alert-primary user-from-message">{% if not message.is_read %}<span style="color: orangered">Не прочитано - </span>{% endif %}{{ message.content }}</div>
-        {% else %}
-            <div style="color: gray">{{ moment(message.send_date).format('LLL') }}</div>
-            <div id="message_{{ message.id }}" class="alert alert-secondary user-to-message">{{ message.content }}</div>
-        {% endif %}
+            {% if message.user_from == current_user %}
+                <div id="time_{{ message.id }}" style="color: gray; text-align: right">{{ moment(message.send_date).format('LLL') }}</div>
+                <div id="message_{{ message.id }}" class="alert alert-primary user-from-message">{% if not message.is_read %}<span id="message_text_{{ message.id }}" style="color: orangered">Не прочитано - </span>{% endif %}{{ message.content }}</div>
+            {% else %}
+                <div id="time_{{ message.id }}" style="color: gray">{{ moment(message.send_date).format('LLL') }}</div>
+                <div id="message_{{ message.id }}" class="alert alert-secondary user-to-message">{{ message.content }}</div>
+            {% endif %}
         {% endfor %}
     </div>
 
     <div class="card-footer">
-        <form method="post">
-            {{ form.message.label }}{{ form.message(class="form-control") }}{{ form.submit(type="submit", class="btn btn-primary") }}
+        <form id="message_form" class="message_form" method="post">
+            <table style="margin: auto">
+                <tr>
+                    <td>{{ form.message.label }}</td>
+                    <td>{{ form.message(class="form-control", autocomplete="off") }}</td>
+                    <td>{{ form.submit(type="button", class="btn btn-primary", id="btn") }}</td>
+                </tr>
+            </table>
         </form>
+
+        <script>
+            $(function () {
+                $('#btn').click(function () {
+                    append_message({{ dialog.id }}, {{ current_user.id }}, {{ user_to.id }})
+                })
+            })
+        </script>
     </div>
 </div>
 {% endblock %}

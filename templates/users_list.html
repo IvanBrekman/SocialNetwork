@@ -6,22 +6,11 @@
 
 {% macro friendship_card(user) %}
     {% set info = user_info(c_user, user) %}
-    {% set friend %}
-        <a class="btn btn-primary" href="{{ url_for('users_dialog', id_from=c_user.id, id_to=user.id) }}">Написать</a>
-        <a class="btn btn-danger" href="javascript:card_type('remove_friend', {{ c_user.id }}, {{ user.id }})">Удалить из друзей</a>
-    {% endset %}
-    {% set subscriber %}
-        <a class="btn btn-success" href="javascript:card_type('add_friend', {{ c_user.id }}, {{ user.id }})">Принять заявку</a>
-        <a class="btn btn-primary" href="{{ url_for('users_dialog', id_from=c_user.id, id_to=user.id) }}">Написать</a>
-    {% endset %}
-    {% set offer %}
-        <a class="btn btn-primary" href="{{ url_for('users_dialog', id_from=c_user.id, id_to=user.id) }}">Написать</a>
-        <a class="btn btn-danger" href="javascript:card_type('remove_req', {{ c_user.id }}, {{ user.id }})">Отменить заявку</a>
-    {% endset %}
-    {% set usual %}
-        <a class="btn btn-primary" href="{{ url_for('users_dialog', id_from=c_user.id, id_to=user.id) }}">Написать</a>
-        <a class="btn btn-success" href="javascript:card_type('add_req', {{ c_user.id }}, {{ user.id }})">Добавить в друзья</a>
-    {% endset %}
+
+    {% set friend %}     <a class="btn btn-danger"  href="javascript:card_type('remove_friend', {{ c_user.id }}, {{ user.id }})">Удалить из друзей</a>{% endset %}
+    {% set subscriber %} <a class="btn btn-success" href="javascript:card_type('add_friend', {{ c_user.id }}, {{ user.id }})">Принять заявку</a>{% endset %}
+    {% set offer %}      <a class="btn btn-danger"  href="javascript:card_type('remove_req', {{ c_user.id }}, {{ user.id }})">Отменить заявку</a>{% endset %}
+    {% set usual %}      <a class="btn btn-success" href="javascript:card_type('add_req', {{ c_user.id }}, {{ user.id }})">Добавить в друзья</a>{% endset %}
 
     <div id="user_{{ user.id }}" class="card post-card">
         <div class="card-header">
@@ -34,11 +23,15 @@
             <span style="font-size: 15px">Статус: {{ user.status }}</span>
         </div>
 
-        {% if current_user == c_user %}
         <div id="user_{{ user.id }}_buttons" class="card-footer">
-            {% if info['type'] == 'friend' %} {{ friend }} {% elif info['type'] == 'subscriber' %} {{ subscriber }} {% elif info['type'] == 'offer' %} {{ offer }} {% else %} {{ usual }} {% endif %}
+            {% if current_user == c_user %}{% if info['type'] == 'subscriber' %} {{ subscriber }} {% endif %} {% endif %}
+            <a class="btn btn-primary" href="{{ url_for('users_dialog', id_from=c_user.id, id_to=user.id) }}">Написать</a>
+            {% if current_user == c_user %}
+                {% if info['type'] == 'friend' %} {{ friend }} {% elif info['type'] == 'offer' %} {{ offer }} {% elif info['type'] == 'usual' %} {{ usual }} {% endif %}
+                {% if c_user.need_answer(user) %} <a id="user_{{ user.id }}_sub_btn" class="btn btn-secondary" href="javascript:answer_offer({{ c_user.id }}, {{ user.id }})">Оставить в подписчиках</a> {% endif %}
+            {% endif %}
+
         </div>
-        {% endif %}
     </div>
 {% endmacro %}
 

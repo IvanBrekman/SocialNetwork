@@ -20,12 +20,15 @@ class Dialog(SqlAlchemyBase, SerializerMixin):
     user2 = orm.relationship('User', foreign_keys=[id2], lazy='subquery')
 
     messages = orm.relationship('Message', back_populates='dialog', order_by='Message.send_date',
-                                lazy='subquery')
+                                lazy='dynamic')
 
     def unread_messages_amount(self, id_from):
         unw = filter(lambda message: message.id_from != id_from and not message.is_read,
                      self.messages)
         return sum(1 for _ in unw)
+
+    def unread_messages(self, id_from):
+        return self.messages.filter(Message.id_from != id_from, Message.is_read == 0).all()
 
 
 class Message(SqlAlchemyBase, SerializerMixin):
