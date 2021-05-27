@@ -1,0 +1,8 @@
+#notifies {
+    position: fixed;
+    width: auto;
+    height: auto;
+    margin-top: 20%;
+    margin-left: 10px;
+    max-width: 400px;
+}

@@ -1,8 +1,12 @@
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import math
 import uuid
 import locale
 import logging
+import threading
 
 from dotenv import load_dotenv
 
@@ -18,6 +22,8 @@ from flask import send_from_directory, render_template, redirect, request, url_f
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_mail import Mail
 from flask_moment import Moment
+from flask_socketio import SocketIO
+from flask_cors import CORS, cross_origin
 
 from data import db_session
 from data.models.user import User, Notification
@@ -33,11 +39,16 @@ from app.forms import RegistrationForm, LoginForm, EditUserForm, AddEditPostForm
 locale.setlocale(locale.LC_ALL, ('ru_RU', 'UTF-8'))
 
 app = Flask(__name__, template_folder='templates')
+cors = CORS(app, resources={r"/*": {"origins": "*"}}, origins='http://127.0.0.1:5000')
 app.config.from_object(Config)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+socket = SocketIO(app)
+thread = None
+thread_lock = threading.Lock()
 
 mail = Mail(app)
 moment = Moment(app)
@@ -65,6 +76,7 @@ if not app.debug and app.config['MAIL_SERVER']:
 
 host = '127.0.0.1'
 port = 5000
+clients = []
 filter_by = {'tags': []}
 sort_by = {'field': 'create_date', 'type': 'desc'}
 
@@ -77,6 +89,33 @@ def not_found_error(e):
 @app.errorhandler(500)
 def internal_error(e):
     return render_template('500.html', title='Ошибка'), 500
+
+
+@socket.on('connect')
+def connect():
+    print('connect')
+    clients.append(request.sid)
+
+    if current_user.is_authenticated:
+        session = db_session.create_session()
+        user = session.query(User).get(current_user.id)
+        user.set_sid(request.sid)
+        session.commit()
+
+
+@socket.on('disconnect')
+def disconnect():
+    print('Client disconnected', clients)
+    clients.remove(request.sid)
+
+
+def send(event, message, receivers):
+    print(event, message)
+    print(receivers, clients)
+    for client in receivers:
+        if client not in clients:
+            print_warning(f'Unknown client: "{client}". All connected clients: {clients}')
+        socket.emit(event, message, room=client)
 
 
 def print_warning(text):
@@ -110,6 +149,8 @@ def get_user_status_info(questioner_user: User, target_user) -> dict:
             f'''<a class="btn btn-success" href="javascript:card_type('add_friend', {questioner_user.id}, {target_user.id})">Принять заявку</a>'''
             f'''<a class="btn btn-primary" href="{url_for('users_dialog', id_from=questioner_user.id, id_to=target_user.id)}">Написать</a>'''
         ]
+        if questioner_user.need_answer(target_user):
+            response['buttons'].append(f'''<a id="user_{target_user.id}_sub_btn" class="btn btn-secondary" href="javascript:answer_offer({questioner_user.id}, {target_user.id})">Оставить в подписчиках</a>''')
         response['status_text'] = ' - Подписчик'
         response['status_style_color'] = 'red'
         response['type'] = 'subscriber'
@@ -171,7 +212,8 @@ def get_suitable_posts(session) -> list:
 
 def main():
     db_session.global_init('db/website.db')
-    app.run(host, port)
+    socket.run(app, host=host, port=port)
+    print(f'http://{host}:{port}')
 
 
 @login_manager.user_loader
@@ -188,7 +230,8 @@ def favicon():
 
 @app.context_processor
 def app_context():
-    context = {'date': dt.utcnow, 'user_info': get_user_status_info}
+    context = {'date': dt.utcnow, 'user_info': get_user_status_info, 'isinstance': isinstance,
+               'Post': Post}
     return context
 
 
@@ -201,11 +244,22 @@ def before_request():
 
         user.last_seen = dt.utcnow()
         session.commit()
+        print(current_user.sid, clients)
     #
+
+
+@app.after_request
+@cross_origin()
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
+@cross_origin()
 def index():
     if not current_user.is_authenticated:
         return redirect(url_for('login'))
@@ -739,35 +793,58 @@ def friendship_requests():
     if request_type not in requests:
         raise ValueError(f'Incorrect request_type. Expected one of {requests}, got {request_type}')
 
-    if request_type == 'add_req':
-        offer = FriendshipOffer(id_from=id_from, id_to=id_to)
-        session.add(offer)
-        user_to.add_notification(session, 'new_friendship_request',
-                                 len(user_to.unanswered_subscribers()) + 1)
-    elif request_type == 'remove_req':
-        offer = get_offer_by_ids([id_from], [id_to])
-        session.delete(offer)
-        if user_to.need_answer(user_from):
-            user_to.add_notification(session, 'new_friendship_request',
-                                     len(user_to.unanswered_subscribers()) - 1)
-    elif request_type == 'add_friend':
-        offer = get_offer_by_ids([id_from, id_to], [id_to, id_from])
-        session.delete(offer)
+    try:
+        if request_type == 'add_req':
+            of = session.query(FriendshipOffer).filter(FriendshipOffer.id_from.in_([id_to]),
+                                                       FriendshipOffer.id_to.in_([id_from])).first()
+            if of:
+                raise ValueError(f'There is offer from user {id_to} to user {id_from}')
+            offer = FriendshipOffer(id_from=id_from, id_to=id_to)
+            session.add(offer)
+            session.commit()
 
-        friend = Friend(id1=id_from, id2=id_to)
-        session.add(friend)
-    elif request_type == 'remove_friend':
-        friend = session.query(Friend).filter(Friend.id1.in_([id_from, id_to]),
-                                              Friend.id2.in_([id_from, id_to])).first()
-        if not friend:
-            raise ValueError(f'There are no friends with pair ids ({id_from}, {id_to})')
-        if friend.id1 == friend.id2:
-            raise RuntimeError(f'Detected incorrect data in friends table. '
-                               f'There is friend note with same ids. Note id: {friend.id}')
-        session.delete(friend)
+            count = len(user_to.unanswered_subscribers())
+            info = get_user_status_info(user_to, user_from)
+            user_to.add_notification(session, 'new_friendship_request', f'{count}+{info}')
+            send('update', 'add friendship request', [user_to.sid])
+        elif request_type == 'remove_req':
+            offer = get_offer_by_ids([id_from], [id_to])
+            update_uns = user_to.need_answer(user_from)
+            session.delete(offer)
+            session.commit()
 
-        offer = FriendshipOffer(id_to=id_from, id_from=id_to, is_answered=True)
-        session.add(offer)
+            if update_uns:
+                k, user_id = len(user_to.unanswered_subscribers()), user_from.id
+                info = get_user_status_info(user_to, user_from)
+                user_to.add_notification(session, 'new_friendship_request', f'{k}+{info}+{user_id}')
+                send('update', 'delete friendship request', [user_to.sid])
+        elif request_type == 'add_friend':
+            offer = get_offer_by_ids([id_from, id_to], [id_to, id_from])
+            session.delete(offer)
+
+            friend = session.query(Friend).filter(Friend.id1.in_([id_from, id_to]),
+                                                  Friend.id2.in_([id_from, id_to])).first()
+            if friend:
+                raise ValueError(f'There are also exists friends with pair ids: ({id_from},{id_to})')
+            friend = Friend(id1=id_from, id2=id_to)
+            session.add(friend)
+        elif request_type == 'remove_friend':
+            friend = session.query(Friend).filter(Friend.id1.in_([id_from, id_to]),
+                                                  Friend.id2.in_([id_from, id_to])).first()
+            if not friend:
+                raise ValueError(f'There are no friends with pair ids ({id_from}, {id_to})')
+            if friend.id1 == friend.id2:
+                raise RuntimeError(f'Detected incorrect data in friends table. '
+                                   f'There is friend note with same ids. Note id: {friend.id}')
+            session.delete(friend)
+
+            offer = FriendshipOffer(id_to=id_from, id_from=id_to, is_answered=True)
+            session.add(offer)
+    except ValueError as e:
+        print_warning(e.__str__())
+        text = '''При отправке запроса произошла ошибка.</br>Другой пользователь поменял состояние 
+                  вашей дружбы.</br>Сейчас вы видите актуальное состояние дружбы.'''
+        send('warning', text, [user_from.sid])
 
     session.commit()
 
@@ -786,12 +863,16 @@ def answer_for_friendship_offer():
     offer = session.query(FriendshipOffer).filter(FriendshipOffer.user_from == user_from,
                                                   FriendshipOffer.user_to == user_to).first()
     if not offer:
-        raise ValueError(f'There are no FriendshipOffer between {user_from.id} and {user_to.id}')
+        print_warning(f'There are no FriendshipOffer between {user_from.id} and {user_to.id}')
+        text = '''При отправке запроса произошла ошибка.</br>Другой пользователь поменял состояние 
+                  вашей дружбы.</br>Обновите страницу, для получения актуальной информации.'''
+        send('error', text, [user_to.sid])
+        return {'response': 'fail'}
 
     offer.is_answered = True
     session.commit()
 
-    return {}
+    return {'response': 'success'}
 
 
 @app.route('/dialogs/<int:user_id>')
@@ -830,12 +911,14 @@ def users_dialog(id_from, id_to):
     data = f'{user_from.id} {user_to.id},{" ".join(msg_ids)}'
 
     session.commit()
-    user_from.add_notification(session, 'unread_messages', len(user_from.unread_dialogs()))
+    unm = len(user_from.unread_dialogs())
+    user_from.add_notification(session, 'unread_messages', unm)
     user_to.add_notification(session, 'messages_read', data)
+    send('update', 'messages read (user opened dialog)', [user_to.sid, user_from.sid])
 
     form = SendMessageForm()
     return render_template('dialog_page.html', title='Диалоги', messages=dialog.messages,
-                           user_to=user_to, form=form, dialog=dialog)
+                           user_to=user_to, form=form, dialog=dialog, unm=unm)
 
 
 @app.route('/append_message', methods=['POST'])
@@ -848,6 +931,7 @@ def append_message():
     id_to = request.form['id_to']
     content = unquote(request.form['form'].split('=')[1]).replace('+', ' ')
 
+    user_from = get_user(session, id_from)
     user_to = get_user(session, id_to, check_auth=False)
 
     message = Message(
@@ -876,8 +960,11 @@ def append_message():
                              render_template('_dialogs_card.html', data=data, sender=user_to))
     user_to.add_notification(session, 'need_add_message',
                              f'{message.id}+++{message.send_date}+++{rec_msg}+++{id_from}')
+    user_from.add_notification(session, 'need_add_message',
+                               f'{message.id}+++{message.send_date}+++{own_msg}')
+    send('update', 'new user message', [user_to.sid, user_from.sid])
 
-    return {'message_block': own_msg, 'id': message.id, 'time': str(message.send_date)}
+    return {'response': 'success'}
 
 
 @app.route('/messages_read', methods=['POST'])
@@ -886,12 +973,17 @@ def messages_read():
     session = db_session.create_session()
 
     user = get_user(session, request.form['user'], check_auth=False)
+    c_user = get_user(session, current_user.id)
+
     message = session.query(Message).get(request.form['id'])
-
     message.is_read = True
-    user.add_notification(session, 'messages_read', f',{message.id}')
+    session.commit()
 
-    return {}
+    user.add_notification(session, 'messages_read', f',{message.id}')
+    c_user.add_notification(session, 'unread_messages', len(c_user.unread_dialogs()))
+    send('update', 'messages read (user in dialog page)', [user.sid])
+
+    return {'response': 'success'}
 
 
 @app.route('/notifications')

@@ -40,7 +40,11 @@
         </p>
         <p>
             <h4>Фотография к посту</h4>
-            <p><img src="{{ url_for('static', filename='img/post_img/' + post.id|string + '_' + post.img + '.jpg') }}" alt="Выбранная картинка" id="photo_img" /></p>
+            <p>
+                {% if isinstance(post, Post) %}
+                <img src="{{ url_for('static', filename='img/post_img/' + post.id|string + '_' + post.img + '.jpg') }}" alt="Выбранная картинка" id="photo_img" />
+                {% else %}<img src="" alt="Выбранная картинка" id="photo_img" />{% endif %}
+            </p>
             {{ form.img.label }}<br>
             {{ form.img(class="form-control", type="file", accept="image/*", onChange="showFile(event)") }}<br>
 

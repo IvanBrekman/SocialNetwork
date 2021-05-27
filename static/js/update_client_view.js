@@ -75,20 +75,38 @@ function set_unread_dialogs_count(n) {
 
 function set_unanswered_offers_count(id, n) {
     $('#unanswered_subscribers_count' + id).text(n);
-    $('#unanswered_subscribers_count' + id).css('visibility', n ? 'visible' : 'hidden')
+    $('#unanswered_subscribers_count' + id).css('visibility', Number.parseInt(n) ? 'visible' : 'hidden')
 }
 
 $(function () {
+    let socket = io.connect('http://localhost:5000')
     let since = 0
-    setInterval(function () {
+
+    console.log(socket)
+    socket.on('connect', function() {
+        console.log('connect complete!')
+    });
+
+    socket.on('update', function (msg) {
+        console.log('receive message from server: "' + msg + '"')
         $.ajax('/notifications?since=' + since)
             .done(function (notifications) {
+                for (let i = 0; i < notifications.length; i++)
+                    console.log(notifications[i].name, notifications[i].data)
                 for (let i = 0; i < notifications.length; i++) {
-                    if (notifications[i].name === 'unread_messages')
+                    if (notifications[i].name === 'unread_messages') {
+                        console.log(notifications[i].data, 'aaa')
                         set_unread_dialogs_count(notifications[i].data)
+                    }
                     if (notifications[i].name === 'new_friendship_request') {
-                        set_unanswered_offers_count('1', notifications[i].data)
-                        set_unanswered_offers_count('2', notifications[i].data)
+                        let data = notifications[i].data.split('+')
+
+                        set_unanswered_offers_count('1', data[0])
+                        set_unanswered_offers_count('2', data[0])
+
+                        if (document.location.href.split('/')[3] === 'subscribers') {
+                            $(`#user_${data[2]}`).remove()
+                        }
                     }
                     if (notifications[i].name === 'need_update_dialogs') {
                         if (document.location.href.split('/')[3] === 'dialogs') {
@@ -101,17 +119,22 @@ $(function () {
                             $('#messages').append(data[2])
                             set_time(`time_${data[0]}`, data[1], 'LLL')
 
-                            $.post('/messages_read', {id: data[0], user: data[3]})
+                            if (data.length === 4) {
+                                $.post('/messages_read', {id: data[0], user: data[3]})
+                                console.log(Number.parseInt($('#dialogs_count').text()) - 1, 'bbb')
+                                set_unread_dialogs_count(Number.parseInt($('#dialogs_count').text()) - 1)
+                            }
                         }
                     }
                     if (notifications[i].name === 'messages_read') {
                         if (document.location.href.split('/')[3] === 'dialogs') {
                             let data = notifications[i].data.split(',')
                             let ids = data[0].split(' ')
-                            let target = $(`#${ids[0]}_${ids[1]}_dialog`).length ? $(`#${ids[1]}_${ids[1]}_dialog`) : $(`#${ids[0]}_${ids[0]}_dialog`)
+                            let target = $(`#${ids[0]}_${ids[1]}_dialog`).length ? $(`#${ids[0]}_${ids[1]}_dialog`) : $(`#${ids[1]}_${ids[0]}_dialog`)
 
                             $(target).text('Прочитано')
                             $(target).css('color', 'deepskyblue')
+                            console.log($(target).text(), ids)
                         }
                         if (document.location.href.split('/')[3] === 'dialog') {
                             let data = notifications[i].data.split(',')
@@ -124,7 +147,15 @@ $(function () {
                     since = notifications[i].timestamp
                 }
             })
-    }, 10000)
+    })
+
+    socket.on('error', function (msg) {
+        Notify.generate(msg, 'Ошибка!', 3)
+    })
+
+    socket.on('warning', function (msg) {
+        Notify.generate(msg, 'Внимание!', 2)
+    })
 })
 
 function set_time(id, time, type='calendar') {
@@ -154,9 +185,6 @@ function append_message(dialog_id, id_from, id_to) {
         },
         dataType: 'json',
         success: function (response) {
-            $('#messages').append(response['message_block'])
-            set_time(`time_${response['id']}`, response['time'], 'LLL')
-
             $('#message_form')[0].reset()
         },
         error: function (response) {
