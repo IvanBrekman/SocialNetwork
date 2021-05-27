@@ -19,6 +19,7 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
     __tablename__ = 'users'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
+    sid = sqlalchemy.Column(sqlalchemy.String)
 
     nickname = sqlalchemy.Column(sqlalchemy.String, nullable=False)
     email = sqlalchemy.Column(sqlalchemy.String, nullable=False, unique=True)
@@ -58,6 +59,9 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
 
     def check_password(self, password) -> bool:
         return check_password_hash(self.password, password)
+
+    def set_sid(self, sid):
+        self.sid = sid
 
     def get_token(self, expires_in=300):
         return jwt.encode({'user': self.nickname, 'exp': time.time() + expires_in},
