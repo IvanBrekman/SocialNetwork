@@ -22,7 +22,6 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_mail import Mail
 from flask_moment import Moment
 from flask_socketio import SocketIO
-from flask_cors import CORS, cross_origin
 
 from data import db_session
 from data.models.user import User, Notification
@@ -39,7 +38,6 @@ locale.setlocale(locale.LC_ALL, ('ru_RU', 'UTF-8'))
 
 # Инициализация приложения
 app = Flask(__name__, template_folder='templates')
-cors = CORS(app, resources={r"/*": {"origins": "*"}}, origins='http://127.0.0.1:5000')
 app.config.from_object(Config)
 
 # Подключение app для авторизации
@@ -49,7 +47,7 @@ login_manager.login_view = 'login'
 #
 
 # Подключение WebSocket сервера
-socket = SocketIO(app)
+socket = SocketIO(app, cors_allowed_origins='http://127.0.0.1:5000')
 thread = None
 thread_lock = threading.Lock()
 #
@@ -287,23 +285,8 @@ def before_request():
     #
 
 
-@app.after_request
-@cross_origin()
-def after_request(response):
-    """ Обработчик для действий после запроса """
-
-    # Добавление необходимых заголовков для отправления сообщений сторонним клиентам
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    #
-
-    return response
-
-
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
-@cross_origin()
 def index():
     """ Обработчик страницы новостей """
 
@@ -313,7 +296,7 @@ def index():
 
     session = db_session.create_session()
 
-    # получение тегов, постов, и оценок постыы
+    # получение тегов, постов, и оценок посты
     tags = session.query(Tag).all()
     posts = get_suitable_posts(session)
 
@@ -1079,7 +1062,7 @@ def users_dialog(id_from, id_to):
     #
 
     form = SendMessageForm()  # Инициализация формы для отправки сообщений
-    return render_template('dialog_page.html', title='Диалоги', messages=dialog.messages,
+    return render_template('dialog_page.html', title='Диалоги', messages=list(dialog.messages),
                            user_to=user_to, form=form, dialog=dialog, unm=unm)
 
 

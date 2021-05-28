@@ -90,7 +90,7 @@ function set_unanswered_offers_count(id, n) {
 
 $(function () {
     // Подключение в WebSocket серверу
-    let socket = io.connect('http://localhost:5000')
+    let socket = io()
     let since = 0
 
     console.log(socket)
