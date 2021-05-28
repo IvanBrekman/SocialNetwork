@@ -1,3 +1,4 @@
+// Скрипт меняет тему сайта (белая/темная)
 function getCookie(name) {
     let matches = document.cookie.match(new RegExp(
         "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
@@ -38,11 +39,11 @@ function oppositeColor(color) {
 function fillPage(col){
     document.getElementsByTagName("body")[0].style.background = col
     let hhes=document.getElementsByTagName("h1")
-        for(let i=0; i<hhes.length; i++){
+        for(let i = 0; i < hhes.length; i++){
             hhes[i].style.color = oppositeColor(col).background
         }
-        let cards=document.getElementsByClassName("card")
-        let labels=document.getElementsByTagName("label")
+        let cards = document.getElementsByClassName("card")
+        let labels = document.getElementsByTagName("label")
         for (let i = 0; i < cards.length; i++) {
             cards[i].style.background = oppositeColor(oppositeColor(col).background).form
         }

@@ -1,6 +1,7 @@
+// Скрипт загружает на сайт выбранное сообщение
 function showFile(e) {
-    var file = e.target.files[0];
-    var fr = new FileReader();
+    let file = e.target.files[0];
+    let fr = new FileReader();
 
     fr.onload = (function(theFile) {
         return function(e) {
@@ -9,4 +10,4 @@ function showFile(e) {
     })(file);
 
     fr.readAsDataURL(file);
-  }
+}

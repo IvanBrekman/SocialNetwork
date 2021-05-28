@@ -11,6 +11,8 @@ sort_types = [('create_date', 'Дате создания'), ('likes', 'Лайк�
 
 
 class RegistrationForm(FlaskForm):
+    """ Класс-форма для регистрации """
+
     nickname = StringField("Никнейм", validators=[DataRequired()])
     email = EmailField("Email", validators=[DataRequired(), Email()])
 
@@ -22,6 +24,8 @@ class RegistrationForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
+    """ Класс-форма для авторизации """
+
     email = EmailField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
 
@@ -30,6 +34,8 @@ class LoginForm(FlaskForm):
 
 
 class EditUserForm(FlaskForm):
+    """ Класс-форма для редактирования информации пользователя """
+
     avatar = FileField('Выберите изображение')
     nickname = StringField("Никнейм", validators=[DataRequired()])
     status = StringField('Статус')
@@ -44,6 +50,8 @@ class EditUserForm(FlaskForm):
 
 
 class ConfirmEmailForm(FlaskForm):
+    """ Класс-форма для подтверждения почты """
+
     email = EmailField('Укажите новую почту', validators=[DataRequired(), Email()])
     submit = SubmitField('Подтвердить изменение')
 
@@ -73,6 +81,8 @@ class ConfirmEmailForm(FlaskForm):
 
 
 class EditPasswordForm(FlaskForm):
+    """ Класс-форма для изменения пароля """
+
     mes = "Указанные пароли не сходятся"
     password = PasswordField("Новый Пароль", validators=[DataRequired()])
     password_again = PasswordField("Повторите пароль", validators=[DataRequired(),
@@ -81,6 +91,8 @@ class EditPasswordForm(FlaskForm):
 
 
 class AddEditPostForm(FlaskForm):
+    """ Класс-форма для добавления/редактирования постов """
+
     title = StringField('Заголовок поста')
     content = TextAreaField('Контент поста')
     tags = SelectMultipleField('Тэги к посту')
@@ -91,6 +103,8 @@ class AddEditPostForm(FlaskForm):
 
 
 class DisplayPostForm(FlaskForm):
+    """ Класс-форма для фильтрации и сортировки постов на странице новостей """
+
     tags = SelectMultipleField('Выберите тэги')
     sort_by = SelectField('Сортировать по', choices=sort_types)
     sort_type = RadioField(choices=[('asc', 'По возрастанию'), ('desc', 'По убыванию')])
@@ -100,10 +114,14 @@ class DisplayPostForm(FlaskForm):
 
 
 class FindUserForm(FlaskForm):
+    """ Класс-форма для поиска пользователя по nickname """
+
     nickname = StringField('')
     submit = SubmitField('Найти')
 
 
 class SendMessageForm(FlaskForm):
+    """ Класс-форма для отправки сообщений в диалогах """
+
     message = StringField('Ваше сообщение', validators=[DataRequired()])
     submit = SubmitField('▲')
